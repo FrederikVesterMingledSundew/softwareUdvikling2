@@ -1,10 +1,10 @@
 #include <iostream>
+#include <iomanip>
+#include <stdlib.h>
 #include <fstream>
 #include <string>
 #include <vector>
 #include <map>
-#include <string>
-#include <fstream>
 
 #define FILENAME "ToDoList.conf"
 
@@ -36,8 +36,24 @@ class TodoList
 {
 	
 	public:
-	std::vector<Task> todolist;
 	TodoList(){}
+	void add(const Task &toDoTask) {
+		this->todolist.push_back(toDoTask);
+	}
+
+	std::vector<Task> getList() {
+		return todolist;
+	}
+
+	int getSize() {
+		return todolist.size();
+	}
+
+	void remove(int ID) {
+		todolist.erase(todolist.begin() + ID);
+	}
+	private:
+	std::vector<Task> todolist;
 
 };
 
@@ -104,16 +120,78 @@ int main() {
 	
 	std::vector<Task> Reader{};
 	config::ReadFromConfig(Reader);
-	
-    if (config::ReadFromConfig(Reader)) {
-        std::cout << "------------------[ To do list ]------------------" << std::endl;
-        for (auto& task : Reader) {
-            std::cout << task.getDescription() << (task.isCompleted() ? " [Completed]" : " [Incomplete]") << std::endl;
-        }
-        std::cout << "--------------------------------------------------" << std::endl;
-    } else {
-        std::cerr << "Failed to read from config file." << std::endl;
-    }
 
+	if (config::ReadFromConfig(Reader)) {
+        
+        for (Task task : Reader) {
+			todo.add(task);
+        }
+        
+    }/* else {
+        std::cerr << "No to do list has been found..." << std::endl;
+    }*/
+	
+	std::string Err{};
+	do {
+		system("cls");
+		std::cout << "\033[2J\033[1;1H";
+		
+		std::cout << "------------------[ To do list ]------------------" << std::endl;
+    
+		int taskId = 0;
+		for(Task task : todo.getList()) {
+			std::cout << std::right << std::setw(10) << "["<<taskId<<"]: ";
+			std::cout << task.getDescription() << (task.isCompleted() ? " [Completed]" : " [Incomplete]") << std::endl;
+			++taskId;
+		}
+		if(!taskId) {
+			std::cout << "Nothing on your list..." << std::endl; 
+		}
+		std::cout << "--------------------------------------------------" << std::endl;
+		std::cout << "\n" << std::endl;
+		if(Err == "") {
+			
+		}
+		else {
+			std::cout << Err << "\n" << std::endl;
+		}
+		std::cout << "Do you wish to make changes to your list?"<< std::endl;
+		std::cout << "/add [task description] - To add a task"<< std::endl;
+		std::cout << "/rm [task ID] - To remove a task"<< std::endl;
+		std::cout << "/done [ID] - Mark complete"<< std::endl;
+		std::cout << "/save - To save list"<< std::endl;
+		std::cout << "/exit - To exit program"<< std::endl;
+
+		std::string msgIn;
+		std::getline(std::cin, msgIn);
+		
+		if(msgIn.at(0) == '/') { //check om det er en kommando
+			int splitter = msgIn.find((char)32); //check om der er et space
+			if(splitter == -1) {
+				Err = "No arguments...";
+				continue;
+			}
+			else {
+				if(!msgIn.substr(0,splitter).compare("/add")) {
+					todo.add(Task(msgIn.substr(splitter+1,msgIn.length()-(splitter+1))));
+					continue;
+				} 
+				if(!msgIn.substr(0,splitter).compare("/rm")) {
+					int num = atoi(msgIn.substr(splitter+1,msgIn.length()-(splitter+1)).c_str());
+					if(num > todo.getSize() || num < 0) { //Not valid ID
+						Err = "ID was not valid";
+						continue;
+					}
+					else {
+						todo.remove(num);
+						
+					}
+					Err = "";
+					continue;
+				}
+			}
+		}
+	}
+	while(1);
     return 0;
 }
