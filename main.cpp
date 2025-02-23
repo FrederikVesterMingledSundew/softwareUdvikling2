@@ -24,8 +24,13 @@ class Task
 	bool isCompleted() {
 		return completed;
 	}
+	
 	std::string getDescription() {
 		return _description;
+	}
+
+	void markComplete() {
+		completed = true;
 	}
 	private:
 	std::string _description; //Description
@@ -51,6 +56,10 @@ class TodoList
 
 	void remove(int ID) {
 		todolist.erase(todolist.begin() + ID);
+	}
+
+	void markDone(int ID) {
+		todolist[ID].markComplete();
 	}
 	private:
 	std::vector<Task> todolist;
@@ -97,13 +106,11 @@ public:
 	
 	}
 	
-	static bool SaveToConfig(const std::map<std::string, std::string> input[], std::size_t sizeOfArray) { //Laver en array ud af det for at opdele hver persons ID
+	static bool SaveToConfig(const std::vector<Task> &input) { //Laver en array ud af det for at opdele hver persons ID
 		std::ofstream File(FILENAME);// Start stream
 		if(File.is_open()) {
-			for(std::size_t i = 0; i < sizeOfArray; ++i) { //Laver en array ud af det for at opdele hver persons ID
-				for(auto &linje:input[i]) {
-					File<<"["<<i<<"]"<<linje.first<<"="<<linje.second<<std::endl;
-				}
+			for(Task linje:input) {
+				File << linje.getDescription() << "=" << (linje.isCompleted()?"1":"0") << std::endl;
 			}
 			File.close();
 			return true;
@@ -119,17 +126,13 @@ int main() {
 	TodoList todo = TodoList();
 	
 	std::vector<Task> Reader{};
-	config::ReadFromConfig(Reader);
-
 	if (config::ReadFromConfig(Reader)) {
         
         for (Task task : Reader) {
 			todo.add(task);
         }
         
-    }/* else {
-        std::cerr << "No to do list has been found..." << std::endl;
-    }*/
+    }
 	
 	std::string Err{};
 	do {
@@ -168,6 +171,13 @@ int main() {
 		if(msgIn.at(0) == '/') { //check om det er en kommando
 			int splitter = msgIn.find((char)32); //check om der er et space
 			if(splitter == -1) {
+				if(!msgIn.compare("/save")) {
+					config::SaveToConfig(todo.getList());
+					continue;
+				}
+				if(!msgIn.compare("/exit")) {
+					return 0;
+				}
 				Err = "No arguments...";
 				continue;
 			}
@@ -182,10 +192,17 @@ int main() {
 						Err = "ID was not valid";
 						continue;
 					}
-					else {
-						todo.remove(num);
-						
+					todo.remove(num);
+					Err = "";
+					continue;
+				}
+				if(!msgIn.substr(0,splitter).compare("/done")) {
+					int num = atoi(msgIn.substr(splitter+1,msgIn.length()-(splitter+1)).c_str());
+					if(num > todo.getSize() || num < 0) { //Not valid ID
+						Err = "ID was not valid";
+						continue;
 					}
+					todo.markDone(num);
 					Err = "";
 					continue;
 				}
