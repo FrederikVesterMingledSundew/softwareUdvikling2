@@ -44,7 +44,6 @@ private:
     std::string _description; //Description
     bool completed = false; //Is the Task completed
     std::string date = "";
-
 };
 
 class TodoList
@@ -78,7 +77,6 @@ public:
 private:
     std::vector<Task> todolist;
 
-
 };
 
 class config
@@ -99,11 +97,11 @@ public:
 
                         std::string completeString = nextLine.substr(splitter+1,nextLine.length()-(splitter+1));
                         bool completed = false;
-
+                        std::string date = (nextLine.substr(splitter+2,nextLine.length()-(splitter+1)).c_str());
                         if(completeString.compare("1")) {
                             completed = true;
                         }
-                        Task middleman = Task(nextLine.substr(0,splitter), completed, "");
+                        Task middleman = Task(nextLine.substr(0,splitter), completed, date);
                         output.push_back(middleman);
                         ++taskID;
                     }
@@ -134,52 +132,11 @@ public:
         return false;
     }
 
-
 };
 
 int main() {
 
-	TodoList todo = TodoList();
-	
-	std::vector<Task> Reader{};
-	if (config::ReadFromConfig(Reader)) {
-        
-        for (Task task : Reader) {
-			todo.add(task);
-        }
-        
-    }
-	
-	std::string Err{};
-	do {
-		system("cls");
-		std::cout << "\033[2J\033[1;1H";
-		
-		std::cout << "------------------[ To do list ]------------------" << std::endl;
-    
-		int taskId = 0;
-		for(Task task : todo.getList()) {
-			std::cout << std::right << std::setw(10) << "["<<taskId<<"]: ";
-			std::cout << task.getDescription() << (task.isCompleted() ? " [Completed]" : " [Incomplete]") << std::endl;
-			++taskId;
-		}
-		if(!taskId) {
-			std::cout << "Nothing on your list..." << std::endl; 
-		}
-		std::cout << "--------------------------------------------------" << std::endl;
-		std::cout << "\n" << std::endl;
-		if(Err == "") {
-			
-		}
-		else {
-			std::cout << Err << "\n" << std::endl;
-		}
-		std::cout << "Do you wish to make changes to your list?"<< std::endl;
-		std::cout << "/add [task description] - To add a task"<< std::endl;
-		std::cout << "/rm [task ID] - To remove a task"<< std::endl;
-		std::cout << "/done [ID] - Mark complete"<< std::endl;
-		std::cout << "/save - To save list"<< std::endl;
-		std::cout << "/exit - To exit program"<< std::endl;
+    TodoList todo = TodoList();
 
     std::vector<Task> Reader{};
     if (config::ReadFromConfig(Reader)) {
@@ -280,6 +237,5 @@ int main() {
         }
     }
     while(1);
-
     return 0;
 }
