@@ -1,9 +1,14 @@
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+#include <iomanip>
+#include <stdlib.h>
 #include <fstream>
 #include <string>
 #include <vector>
+#include <map>
+
+#define FILENAME "ToDoList.conf"
 #include <map>
 
 #define FILENAME "ToDoList.conf"
@@ -17,7 +22,7 @@ class Task
 		completed = false;
 	}
 
-	Task(std::string description, bool complete) : _description(description), completed(complete){
+	Task(std::string description, bool complete, std::string duedate) : _description(description), completed(complete), date(duedate){
 		; //
 	}
 	
@@ -30,16 +35,24 @@ class Task
 	}
 
 	void setDescription(const std::string &description) {
-		std::cout << "Errorcheck: " << description << std::endl;
 		this->_description = description;
 	}
 
 	void markComplete() {
 		completed = true;
 	}
+
+	void setDate(std::string date2){
+        date = date2;
+    }
+    std::string getDate(){
+        return date;
+    }
+
 	private:
 	std::string _description; //Description
 	bool completed = false; //Is the Task completed
+	std::string date = "";
 };
 
 class TodoList
@@ -66,67 +79,71 @@ class TodoList
 	void edit(const int &ID, const std::string &inputMsg) {
 		todolist[ID].setDescription(inputMsg);
 	}
-
+	
 	void markDone(int ID) {
 		todolist[ID].markComplete();
 	}
+
+	void setDueDate(int ID, std::string date){
+        todolist[ID].setDate(date);
+    }
 	private:
 	std::vector<Task> todolist;
-
+	
 };
 
 class config
 {
 public:
-	static bool ReadFromConfig(std::vector<Task> &output) { //Read from config file
-		std::ifstream File(FILENAME); // Start stream
-		if(File.is_open()) {
-			std::string nextLine;
-			int taskID = 0;
-			while(getline(File, nextLine)) {
-				if(nextLine.at(0) == '#') { //Hvis vi ønsker at lave en kommentar i To do listen
-					; //Do nothing
-				}
-				else {
-					int splitter = nextLine.find('='); //Vi skal finde et ligmed tegn ellers stop projektet
-					if(splitter != 0) {
+    static bool ReadFromConfig(std::vector<Task> &output) { //Read from config file
+        std::ifstream File(FILENAME); // Start stream
+        if(File.is_open()) {
+            std::string nextLine;
+            int taskID = 0;
+            while(getline(File, nextLine)) {
+                if(nextLine.at(0) == '#') { //Hvis vi ønsker at lave en kommentar i To do listen
+                    ; //Do nothing
+                }
+                else {
+                    int splitter = nextLine.find('='); //Vi skal finde et ligmed tegn ellers stop projektet
+                    if(splitter != 0) {
 
-						std::string completeString = nextLine.substr(splitter+1,nextLine.length()-(splitter+1));
-						bool completed = false;
+                        std::string completeString = nextLine.substr(splitter+1,nextLine.length()-(splitter+1));
+                        bool completed = false;
+                        std::string date = (nextLine.substr(splitter+2,nextLine.length()-(splitter+1)).c_str());
+                        if(completeString.compare("1")) {
+                            completed = true;
+                        }
+                        Task middleman = Task(nextLine.substr(0,splitter), completed, date);
+                        output.push_back(middleman);
+                        ++taskID;
+                    }
+                    else {
+                        File.close();
+                        return false;
+                    }
+                }
+            }
+            File.close();
+            return true;
+        }
+        File.close();
+        return false;
 
-						if(completeString.compare("1")) {
-							completed = true;
-						} 
-						Task middleman = Task(nextLine.substr(0,splitter), completed);
-						output.push_back(middleman);
-						++taskID;
-					}
-					else {
-						File.close();
-						return false;
-					}
-				}
-			}
-			File.close();
-			return true;
-		}
-		File.close();
-		return false;
-	
-	}
-	
-	static bool SaveToConfig(const std::vector<Task> &input) { //Laver en array ud af det for at opdele hver persons ID
-		std::ofstream File(FILENAME);// Start stream
-		if(File.is_open()) {
-			for(Task linje:input) {
-				File << linje.getDescription() << "=" << (linje.isCompleted()?"1":"0") << std::endl;
-			}
-			File.close();
-			return true;
-		}
-		File.close();
-		return false;
-	}
+    }
+
+    static bool SaveToConfig(const std::vector<Task> &input) { //Laver en array ud af det for at opdele hver persons ID
+        std::ofstream File(FILENAME);// Start stream
+        if(File.is_open()) {
+            for(Task linje:input) {
+                File << linje.getDescription() << "=" << (linje.isCompleted()?"1":"0") << std::endl;
+            }
+            File.close();
+            return true;
+        }
+        File.close();
+        return false;
+    }
 
 };
 
@@ -153,7 +170,8 @@ int main() {
 		int taskId = 0;
 		for(Task task : todo.getList()) {
 			std::cout << std::right << std::setw(2) << "["<<taskId<<"]: ";
-			std::cout << task.getDescription() << (task.isCompleted() ? " [Completed]" : " [Incomplete]") << std::endl;
+			std::cout << task.getDescription() << (task.isCompleted() ? " [Completed]" : " [Incomplete]") << task.getDate() << std::endl;
+
 			++taskId;
 		}
 		if(!taskId) {
@@ -174,6 +192,7 @@ int main() {
 		std::cout << "/done [ID] - Mark complete"<< std::endl;
 		std::cout << "/save - To save list"<< std::endl;
 		std::cout << "/exit - To exit program"<< std::endl;
+		std::cout << "/due [task ID] [dd/mm/yyyy] - to set a due date for your task"<< std::endl; // dato er en string så due date kunne også bare være f.eks "monday"
 
 		std::string msgIn;
 		std::getline(std::cin, msgIn);
@@ -242,6 +261,17 @@ int main() {
 					Err = "";
 					continue;
 				}
+				if(!msgIn.substr(0,splitter).compare("/due")) {
+                    int num = atoi(msgIn.substr(splitter+1,msgIn.length()-(splitter+1)).c_str());
+                    if(num > todo.getSize() || num < 0) { //Not valid ID
+                        Err = "ID was not valid";
+                        continue;
+                    }
+                    std::string date = (msgIn.substr(splitter+2,msgIn.length()-(splitter+1)).c_str());
+                    todo.setDueDate(num, date);
+                    Err = "";
+                    continue;
+                }
 			}
 		}
 	}
