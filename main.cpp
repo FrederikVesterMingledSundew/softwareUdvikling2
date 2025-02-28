@@ -29,6 +29,11 @@ class Task
 		return _description;
 	}
 
+	void setDescription(const std::string &description) {
+		std::cout << "Errorcheck: " << description << std::endl;
+		this->_description = description;
+	}
+
 	void markComplete() {
 		completed = true;
 	}
@@ -56,6 +61,10 @@ class TodoList
 
 	void remove(int ID) {
 		todolist.erase(todolist.begin() + ID);
+	}
+
+	void edit(const int &ID, const std::string &inputMsg) {
+		todolist[ID].setDescription(inputMsg);
 	}
 
 	void markDone(int ID) {
@@ -143,7 +152,7 @@ int main() {
     
 		int taskId = 0;
 		for(Task task : todo.getList()) {
-			std::cout << std::right << std::setw(10) << "["<<taskId<<"]: ";
+			std::cout << std::right << std::setw(2) << "["<<taskId<<"]: ";
 			std::cout << task.getDescription() << (task.isCompleted() ? " [Completed]" : " [Incomplete]") << std::endl;
 			++taskId;
 		}
@@ -160,6 +169,7 @@ int main() {
 		}
 		std::cout << "Do you wish to make changes to your list?"<< std::endl;
 		std::cout << "/add [task description] - To add a task"<< std::endl;
+		std::cout << "/edit [ID] [new task description] - Mark complete"<< std::endl;
 		std::cout << "/rm [task ID] - To remove a task"<< std::endl;
 		std::cout << "/done [ID] - Mark complete"<< std::endl;
 		std::cout << "/save - To save list"<< std::endl;
@@ -186,6 +196,32 @@ int main() {
 					todo.add(Task(msgIn.substr(splitter+1,msgIn.length()-(splitter+1))));
 					continue;
 				} 
+				if(!msgIn.substr(0,splitter).compare("/edit")) {
+					std::string tempMsg = msgIn.substr(splitter+1,msgIn.length()-(splitter+1)); //Finder besked efter første mellemrum
+
+					int splitter2 = tempMsg.find((char)32); //check om der er et space
+					if(splitter2 == -1) {
+						Err = "No arguments to edit with...";
+						continue;
+					}
+
+					std::string msgDescription = tempMsg.substr(splitter2+1,msgIn.length()-(splitter2+1)); //Finder besked efter første mellemrum
+
+					int num = atoi(msgIn.substr(splitter+1,splitter2-(splitter+1)).c_str());
+
+					
+
+					if(num > todo.getSize() || num < 0) { //Not valid ID
+						Err = "ID was not valid";
+						continue;
+					}
+					tempMsg.erase(tempMsg.begin() + splitter2); //sletter alt indtil mellemrum
+
+					todo.edit(num, msgDescription); //Edit func
+					
+					Err = "";
+					continue;
+				}
 				if(!msgIn.substr(0,splitter).compare("/rm")) {
 					int num = atoi(msgIn.substr(splitter+1,msgIn.length()-(splitter+1)).c_str());
 					if(num > todo.getSize() || num < 0) { //Not valid ID
