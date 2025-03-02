@@ -9,9 +9,6 @@
 #include <map>
 
 #define FILENAME "ToDoList.conf"
-#include <map>
-
-#define FILENAME "ToDoList.conf"
 
 class Task
 {
