@@ -157,25 +157,52 @@ int main() {
         
     }
 	
+	bool filtered = false;
+	std::string filter{};
+
 	std::string Err{};
 	do {
 		system("cls");
 		std::cout << "\033[2J\033[1;1H";
-		
-		std::cout << "------------------[ To do list ]------------------" << std::endl;
-    
-		int taskId = 0;
-		for(Task task : todo.getList()) {
-			std::cout << std::right << std::setw(2) << "["<<taskId<<"]: ";
-			std::cout << task.getDescription() << (task.isCompleted() ? " [Completed]" : " [Incomplete]") << task.getDate() << std::endl;
 
-			++taskId;
+		int taskId = 0;	
+	
+		if (!filtered) {
+			std::cout << "------------------[ To do list ]------------------" << std::endl;
+
+			for(Task task : todo.getList()) {
+				std::cout << std::right << std::setw(2) << "["<<taskId<<"]: ";
+				std::cout << task.getDescription() << (task.isCompleted() ? " [Completed]" : " [Incomplete]") << task.getDate() << std::endl;
+
+				++taskId;
+			}
+		} else {
+			bool tasksFound = false;
+			std::cout << "------------------[ Filtered list ]------------------" << std::endl;
+
+			for(Task task : todo.getList()) {
+				if ((filter == "Completed") == task.isCompleted()) {
+					std::cout << std::right << std::setw(2) << "["<<taskId<<"]: ";
+					std::cout << task.getDescription() << (task.isCompleted() ? " [Completed]" : " [Incomplete]") << task.getDate() << std::endl;
+					tasksFound = true;
+				}
+
+				++taskId;
+			}
+			if (!tasksFound) {
+				std::cout << "You have no [" + filter + "] tasks" << std::endl;
+			}
 		}
+
+		filtered = false;
+
 		if(!taskId) {
 			std::cout << "Nothing on your list..." << std::endl; 
 		}
+
 		std::cout << "--------------------------------------------------" << std::endl;
 		std::cout << "\n" << std::endl;
+
 		if(Err == "") {
 			
 		}
@@ -190,6 +217,7 @@ int main() {
 		std::cout << "/save - To save list"<< std::endl;
 		std::cout << "/exit - To exit program"<< std::endl;
 		std::cout << "/due [task ID] [dd/mm/yyyy] - to set a due date for your task"<< std::endl; // dato er en string så due date kunne også bare være f.eks "monday"
+		std::cout << "/filter [Completed] || [Pending] - to see filtered list" << std::endl;
 
 		std::string msgIn;
 		std::getline(std::cin, msgIn);
@@ -266,6 +294,17 @@ int main() {
                     }
                     std::string date = (msgIn.substr(splitter+2,msgIn.length()-(splitter+1)).c_str());
                     todo.setDueDate(num, date);
+                    Err = "";
+                    continue;
+                }
+				if(!msgIn.substr(0,splitter).compare("/filter")) {
+                    filter = (msgIn.substr(splitter+1,msgIn.length()-(splitter+1)).c_str());
+					if(filter != "Completed" && filter != "Pending") { //Not valid Filter
+                        Err = "Filter [" + filter + "] not valid";
+                        continue;
+                    }
+
+					filtered = true;
                     Err = "";
                     continue;
                 }
