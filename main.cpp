@@ -46,6 +46,15 @@ class Task
         return date;
     }
 
+	bool search(std::string search) {
+		for (int i = 0; i < (_description.length() - search.length() + 1); ++i) {
+			if (_description.substr(i, search.length()) == search) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private:
 	std::string _description; //Description
 	bool completed = false; //Is the Task completed
@@ -157,8 +166,11 @@ int main() {
         
     }
 	
-	bool filtered = false;
-	std::string filter{};
+	bool filtered = false; //State variable to indicate if list shown should be filtered
+	std::string filter{}; //String containing the filter word
+
+	bool searchedList = false; //State variable to indicate if list shown should be search results
+	std::string search = ""; //String containing search term
 
 	std::string Err{};
 	do {
@@ -166,8 +178,10 @@ int main() {
 		std::cout << "\033[2J\033[1;1H";
 
 		int taskId = 0;	
+
+		bool tasksFound = false; //State variable to know if any tasks was found in the filter or search
 	
-		if (!filtered) {
+		if (!filtered && !searchedList) {
 			std::cout << "------------------[ To do list ]------------------" << std::endl;
 
 			for(Task task : todo.getList()) {
@@ -176,12 +190,12 @@ int main() {
 
 				++taskId;
 			}
-		} else {
-			bool tasksFound = false;
+		} else if (!searchedList) {
+			
 			std::cout << "------------------[ Filtered list ]------------------" << std::endl;
 
 			for(Task task : todo.getList()) {
-				if ((filter == "Completed") == task.isCompleted()) {
+				if ((filter == "Completed") == task.isCompleted()) { //Checks if task completion state matches filter i.e. both completed or both pending
 					std::cout << std::right << std::setw(2) << "["<<taskId<<"]: ";
 					std::cout << task.getDescription() << (task.isCompleted() ? " [Completed]" : " [Incomplete]") << task.getDate() << std::endl;
 					tasksFound = true;
@@ -192,9 +206,25 @@ int main() {
 			if (!tasksFound) {
 				std::cout << "You have no [" + filter + "] tasks" << std::endl;
 			}
+		} else {
+			std::cout << "------------------[ Search results ]------------------" << std::endl;
+
+			for(Task task : todo.getList()) {
+				if (task.search(search)) { //Checks if task has search term in description
+					std::cout << std::right << std::setw(2) << "["<<taskId<<"]: ";
+					std::cout << task.getDescription() << (task.isCompleted() ? " [Completed]" : " [Incomplete]") << task.getDate() << std::endl;
+					tasksFound = true;
+				}
+
+				++taskId;
+			}
+			if (!tasksFound) {
+				std::cout << "No tasks match the term [" + search + "]" << std::endl;
+			}
 		}
 
-		filtered = false;
+		filtered = false; //Resets filtered state
+		searchedList = false; //Resets search state
 
 		if(!taskId) {
 			std::cout << "Nothing on your list..." << std::endl; 
@@ -217,7 +247,8 @@ int main() {
 		std::cout << "/save - To save list"<< std::endl;
 		std::cout << "/exit - To exit program"<< std::endl;
 		std::cout << "/due [task ID] [dd/mm/yyyy] - to set a due date for your task"<< std::endl; // dato er en string så due date kunne også bare være f.eks "monday"
-		std::cout << "/filter [Completed] || [Pending] - to see filtered list" << std::endl;
+		std::cout << "/filter [Completed] || [Pending] - Filters list" << std::endl;
+		std::cout << "/search [search term] - Finds tasks with matching description" << std::endl;
 
 		std::string msgIn;
 		std::getline(std::cin, msgIn);
@@ -298,13 +329,24 @@ int main() {
                     continue;
                 }
 				if(!msgIn.substr(0,splitter).compare("/filter")) {
-                    filter = (msgIn.substr(splitter+1,msgIn.length()-(splitter+1)).c_str());
+                    filter = (msgIn.substr(splitter+1,msgIn.length()-(splitter+1)).c_str()); //Sets filter word to 2nd word in msgIn
 					if(filter != "Completed" && filter != "Pending") { //Not valid Filter
                         Err = "Filter [" + filter + "] not valid";
                         continue;
                     }
 
-					filtered = true;
+					filtered = true; //Sets filter state to true for next runthrough
+                    Err = "";
+                    continue;
+                }
+				if(!msgIn.substr(0,splitter).compare("/search")) {
+                    search = (msgIn.substr(splitter+1,msgIn.length()-(splitter+1))); //Sets search term based on msgIn
+					if(search == "") { //Not valid search term
+                        Err = "Error - search term missing";
+                        continue;
+                    }
+
+					searchedList = true;
                     Err = "";
                     continue;
                 }
